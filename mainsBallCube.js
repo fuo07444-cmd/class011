@@ -11,7 +11,6 @@ const camera = new THREE.PerspectiveCamera(
 );
 
 const renderer = new THREE.WebGLRenderer();
-
 renderer.setSize(
   window.innerWidth,
   window.innerHeight
@@ -30,34 +29,68 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
 camera.position.set(
-  6,
-  4,
-  10
+  10,
+  8,
+  12
 );
 
 camera.lookAt(0, 0, 0);
 
+// ライト
 const light = new THREE.PointLight(
   0xffffff,
-  200,
-  50
+  300,
+  100
 );
 
 light.position.set(
   5,
-  5,
+  8,
   5
 );
 
 scene.add(light);
 
+const ambientLight =
+  new THREE.AmbientLight(
+    0xffffff,
+    2
+  );
+
+scene.add(ambientLight);
+
+// 床
+const planeGeo =
+  new THREE.PlaneGeometry(
+    20,
+    20,
+    30,
+    30
+  );
+
+const planeMat =
+  new THREE.MeshBasicMaterial({
+    color: 0x666600,
+    wireframe: true
+  });
+
+const plane =
+  new THREE.Mesh(
+    planeGeo,
+    planeMat
+  );
+
+plane.rotation.x =
+  -Math.PI / 2;
+
+scene.add(plane);
+
 // 車輪クラス
-class wheel extends THREE.Object3D {
+class Wheel extends THREE.Object3D {
 
   constructor(
     radius,
     width,
-    segments,
     color,
     x,
     y,
@@ -66,23 +99,25 @@ class wheel extends THREE.Object3D {
 
     super();
 
-    this.geometry =
+    const geometry =
       new THREE.CylinderGeometry(
         radius,
         radius,
         width,
-        segments
+        16
       );
 
-    this.material =
+    const material =
       new THREE.MeshPhongMaterial({
-        color: color
+        color: color,
+        wireframe: true
       });
 
-    this.mesh = new THREE.Mesh(
-      this.geometry,
-      this.material
-    );
+    this.mesh =
+      new THREE.Mesh(
+        geometry,
+        material
+      );
 
     this.mesh.rotation.x =
       Math.PI / 2;
@@ -99,224 +134,255 @@ class wheel extends THREE.Object3D {
   rotateWheel(speed) {
     this.rotation.z += speed;
   }
+
+}
+// ToyTrainクラス
+class ToyTrain extends THREE.Group {
+
+  constructor(color) {
+
+    super();
+
+    const body =
+      new THREE.Mesh(
+        new THREE.CylinderGeometry(
+          1,
+          1,
+          4,
+          16
+        ),
+        new THREE.MeshPhongMaterial({
+          color: color,
+          wireframe: true
+        })
+      );
+
+    body.rotation.z =
+      Math.PI / 2;
+
+    body.position.set(
+      0,
+      1,
+      0
+    );
+
+    this.add(body);
+
+    const cabin =
+      new THREE.Mesh(
+        new THREE.BoxGeometry(
+          2,
+          3,
+          2
+        ),
+        new THREE.MeshPhongMaterial({
+          color: color,
+          wireframe: true
+        })
+      );
+
+    cabin.position.set(
+      2,
+      2,
+      0
+    );
+
+    this.add(cabin);
+
+    const chimney =
+      new THREE.Mesh(
+        new THREE.CylinderGeometry(
+          0.3,
+          0.3,
+          1,
+          16
+        ),
+        new THREE.MeshPhongMaterial({
+          color: color,
+          wireframe: true
+        })
+      );
+
+    chimney.position.set(
+      -1.5,
+      2.2,
+      0
+    );
+
+    this.add(chimney);
+
+    this.wheels = [];
+
+    const wheel1 =
+      new Wheel(
+        0.9,
+        0.3,
+        0xff0000,
+        2.0,
+        1.0,
+        -1.1
+      );
+
+    const wheel2 =
+      new Wheel(
+        0.9,
+        0.3,
+        0xff0000,
+        2.0,
+        1.0,
+        1.1
+      );
+
+    const wheel3 =
+      new Wheel(
+        0.55,
+        0.25,
+        0xffff00,
+        -1.0,
+        0.45,
+        -1.1
+      );
+
+    const wheel4 =
+      new Wheel(
+        0.55,
+        0.25,
+        0xffff00,
+        0.2,
+        0.45,
+        -1.1
+      );
+
+    const wheel5 =
+      new Wheel(
+        0.55,
+        0.25,
+        0xffff00,
+        -1.0,
+        0.45,
+        1.1
+      );
+
+    const wheel6 =
+      new Wheel(
+        0.55,
+        0.25,
+        0xffff00,
+        0.2,
+        0.45,
+        1.1
+      );
+
+    this.add(wheel1);
+    this.add(wheel2);
+    this.add(wheel3);
+    this.add(wheel4);
+    this.add(wheel5);
+    this.add(wheel6);
+
+    this.wheels.push(
+      wheel1,
+      wheel2,
+      wheel3,
+      wheel4,
+      wheel5,
+      wheel6
+    );
+
+    const customPivot =
+      new THREE.Vector3(
+        2.0,
+        0,
+        0
+      );
+
+    this.children.forEach(
+      (child) => {
+        child.position.sub(
+          customPivot
+        );
+      }
+    );
+  }
+
+  update() {
+
+    this.rotation.y +=
+      0.01;
+
+    this.wheels.forEach(
+      (wheel) => {
+        wheel.rotateWheel(
+          0.05
+        );
+      }
+    );
+
+  }
+
 }
 
-// 機関車グループ
-const trainGroup = new THREE.Group();
-
-// 車体
-const bodyGeo =
-  new THREE.CylinderGeometry(
-    1,
-    1,
-    4,
-    32
+// 5台生成
+const train1 =
+  new ToyTrain(
+    0x00ff00
   );
 
-const bodyMat =
-  new THREE.MeshPhongMaterial({
-    color: 0x00ff00
-  });
-
-const body =
-  new THREE.Mesh(
-    bodyGeo,
-    bodyMat
+const train2 =
+  new ToyTrain(
+    0x00ffff
   );
 
-body.rotation.z =
-  Math.PI / 2;
+const train3 =
+  new ToyTrain(
+    0xff00ff
+  );
 
-body.position.set(
+const train4 =
+  new ToyTrain(
+    0xff8800
+  );
+
+const train5 =
+  new ToyTrain(
+    0xffffff
+  );
+
+train1.position.set(
   0,
-  1,
+  0,
   0
 );
 
-trainGroup.add(body);
-
-// 運転席
-const cabinGeo =
-  new THREE.BoxGeometry(
-    2,
-    3,
-    2
-  );
-
-const cabinMat =
-  new THREE.MeshPhongMaterial({
-    color: 0x0000ff
-  });
-
-const cabin =
-  new THREE.Mesh(
-    cabinGeo,
-    cabinMat
-  );
-
-cabin.position.set(
-  2,
-  2,
-  0
+train2.position.set(
+  4,
+  0,
+  4
 );
 
-trainGroup.add(cabin);
-
-// 煙突
-const chimneyGeo =
-  new THREE.CylinderGeometry(
-    0.3,
-    0.3,
-    1,
-    32
-  );
-
-const chimneyMat =
-  new THREE.MeshPhongMaterial({
-    color: 0x663300
-  });
-
-const chimney =
-  new THREE.Mesh(
-    chimneyGeo,
-    chimneyMat
-  );
-
-chimney.position.set(
-  -1.5,
-  2.2,
-  0
+train3.position.set(
+  -4,
+  0,
+  4
 );
 
-trainGroup.add(chimney);
-
-// 赤い大車輪
-const wheelBig1 = new wheel(
-  0.9,
-  0.3,
-  8,
-  0xff0000,
-  2.0,
-  1.0,
-  -1.1
+train4.position.set(
+  4,
+  0,
+  -4
 );
 
-const wheelBig2 = new wheel(
-  0.9,
-  0.3,
-  8,
-  0xff0000,
-  2.0,
-  1.0,
-  1.1
+train5.position.set(
+  -4,
+  0,
+  -4
 );
 
-trainGroup.add(wheelBig1);
-trainGroup.add(wheelBig2);
-
-// 黄色小車輪
-const wheelSmall1 = new wheel(
-  0.55,
-  0.25,
-  32,
-  0xffff00,
-  -1.0,
-  0.45,
-  -1.1
-);
-
-const wheelSmall2 = new wheel(
-  0.55,
-  0.25,
-  32,
-  0xffff00,
-  0.2,
-  0.45,
-  -1.1
-);
-
-const wheelSmall3 = new wheel(
-  0.55,
-  0.25,
-  32,
-  0xffff00,
-  -1.0,
-  0.45,
-  1.1
-);
-
-const wheelSmall4 = new wheel(
-  0.55,
-  0.25,
-  32,
-  0xffff00,
-  0.2,
-  0.45,
-  1.1
-);
-
-trainGroup.add(wheelSmall1);
-trainGroup.add(wheelSmall2);
-trainGroup.add(wheelSmall3);
-trainGroup.add(wheelSmall4);
-// マテリアル変更
-
-// 赤い車輪
-wheelBig1.mesh.material =
-  new THREE.MeshPhongMaterial({
-    color: 0xff0000,
-    flatShading: true
-  });
-
-wheelBig2.mesh.material =
-  new THREE.MeshPhongMaterial({
-    color: 0xff0000,
-    flatShading: true
-  });
-
-// 黄色中央
-wheelSmall2.mesh.material =
-  new THREE.MeshPhongMaterial({
-    color: 0xffff00,
-    flatShading: true
-  });
-
-wheelSmall4.mesh.material =
-  new THREE.MeshPhongMaterial({
-    color: 0xffff00,
-    flatShading: true
-  });
-
-// 黄色前後
-wheelSmall1.mesh.material =
-  new THREE.MeshPhongMaterial({
-    color: 0xffff00,
-    wireframe: true
-  });
-
-wheelSmall3.mesh.material =
-  new THREE.MeshPhongMaterial({
-    color: 0xffff00,
-    wireframe: true
-  });
-
-// グループ全体の中心を原点へ移動
-const box =
-  new THREE.Box3()
-    .setFromObject(trainGroup);
-
-const center =
-  new THREE.Vector3();
-
-box.getCenter(center);
-
-trainGroup.children.forEach(
-  (child) => {
-    child.position.sub(center);
-  }
-);
-
-scene.add(trainGroup);
+scene.add(train1);
+scene.add(train2);
+scene.add(train3);
+scene.add(train4);
+scene.add(train5);
 
 function animate() {
 
@@ -324,32 +390,11 @@ function animate() {
     animate
   );
 
-  trainGroup.rotation.y +=
-    0.01;
-
-  wheelBig1.rotateWheel(
-    0.05
-  );
-
-  wheelBig2.rotateWheel(
-    0.05
-  );
-
-  wheelSmall1.rotateWheel(
-    0.05
-  );
-
-  wheelSmall2.rotateWheel(
-    0.05
-  );
-
-  wheelSmall3.rotateWheel(
-    0.05
-  );
-
-  wheelSmall4.rotateWheel(
-    0.05
-  );
+  train1.update();
+  train2.update();
+  train3.update();
+  train4.update();
+  train5.update();
 
   controls.update();
 
@@ -357,6 +402,7 @@ function animate() {
     scene,
     camera
   );
+
 }
 
 animate();
@@ -375,5 +421,6 @@ window.addEventListener(
       window.innerWidth,
       window.innerHeight
     );
+
   }
 );
